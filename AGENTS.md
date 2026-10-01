@@ -32,6 +32,15 @@ Pose-lui la question :
 
 `.env` est dans `.gitignore`. Ne le commite jamais.
 
+### 3 bis. Le Système côté serveur (optionnel, mode Supabase uniquement)
+
+Propose-le : un cron juge la journée juste après minuit et envoie la pénalité par email.
+
+1. L'utilisateur crée un compte Resend (resend.com) **avec l'adresse qui recevra les alertes**, puis une clé API. Sans domaine vérifié, Resend n'envoie qu'à l'adresse du compte.
+2. Déploie la fonction `supabase/functions/system-judge` **sans vérification JWT** (elle vérifie elle-même un secret partagé) : `npx supabase functions deploy system-judge --no-verify-jwt --project-ref <ref>`, ou via ton accès Supabase.
+3. Exécute `supabase/cron.sql` après avoir remplacé ses valeurs (ref du projet, email, URL de l'app, clé Resend). Ne modifie pas le fichier du repo.
+4. Pour tester sans rien écrire, appelle la fonction depuis le SQL Editor avec `net.http_post`, le header `x-cron-secret` lu dans `vault.decrypted_secrets`, et le corps `{"dry": true}` ; le corps `{"test": "email"}` envoie un email de test. La réponse est dans `net._http_response`.
+
 ## 4. Lancer
 
 ```bash
@@ -51,4 +60,5 @@ En mode Local, le site en ligne stocke les données dans le navigateur de chaque
 - `src/lib/store.jsx` : état de l'app et actions ; `src/lib/backend.js` : stockage local ou Supabase.
 - `src/lib/stats.js` : calcul des % (fréquences hebdo incluses).
 - `src/lib/penalties.js`, `src/lib/ranking.js`, `src/lib/attributes.js` : pénalités, rangs et XP, stats du joueur.
+- `supabase/functions/system-judge` : le Système côté serveur. Son dossier `lib/` est une copie de `src/lib` : après toute modification des règles, lance `npm run sync:function`.
 - Toute nouvelle table Supabase doit reprendre la politique RLS `owner_only` de `supabase/schema.sql`.

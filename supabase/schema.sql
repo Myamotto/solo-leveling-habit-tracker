@@ -63,6 +63,7 @@ create table if not exists player (
   quest_rank text,
   quest_start date,
   seen_level int not null default 1,
+  timezone text not null default 'Europe/Paris', -- mis à jour par l'app ; sert au Système côté serveur
   updated_at timestamptz not null default now()
 );
 
@@ -102,3 +103,16 @@ begin
     execute format('grant select, insert, update, delete on %I to authenticated', t);
   end loop;
 end $$;
+
+-- Réglages du Système (serveur), lus dans Vault par la fonction system-judge uniquement.
+-- Optionnel : voir supabase/cron.sql pour activer le cron et les emails.
+create or replace function public.system_settings()
+returns jsonb language sql stable security definer set search_path = ''
+as $$
+  select coalesce(jsonb_object_agg(name, decrypted_secret), '{}'::jsonb)
+  from vault.decrypted_secrets
+  where name in ('system_cron_secret', 'resend_api_key', 'notify_email', 'app_url');
+$$;
+revoke all on function public.system_settings() from public, anon, authenticated;
+grant execute on function public.system_settings() to service_role;
+

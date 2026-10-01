@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { backend, backendName } from './backend'
 import { dayKey } from './dates'
 import { draw, evaluate } from './penalties'
-import { DEFAULT_PLAYER, judge, levelOf, totalXp } from './ranking'
+import { DEFAULT_PLAYER, judge, levelOf, samePlayer, totalXp } from './ranking'
 
 const Ctx = createContext(null)
 export const useData = () => useContext(Ctx)
@@ -125,17 +125,35 @@ export function DataProvider({ children }) {
         day: today, missed_day: verdict.yesterday, missed_rate: verdict.rate,
         penalty_id: pick.id, title: pick.title, detail: pick.detail, accepted: false, done: false,
       }
-      run((s) => ({ ...s, penalties: [...s.penalties, p] }), 'penalty:upsert', p)
+      run((s) => ({ ...s, penalties: [...s.penalties, p] }), 'penalty:create', p)
     }
 
     // Classement : premier lancement -> joueur créé sans alerte de niveau rétroactive
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const before = state.player || { ...DEFAULT_PLAYER, seen_level: levelOf(totalXp(data)).level }
-    const { player, events } = judge(data, before)
-    if (!state.player || JSON.stringify(player) !== JSON.stringify(before)) {
+    const ranked = judge(data, before)
+    const events = ranked.events
+    // Le fuseau du navigateur sert au Système (serveur) pour savoir quand commence ta journée
+    const player = timezone ? { ...ranked.player, timezone } : ranked.player
+    if (!samePlayer(player, state.player)) {
       run((s) => ({ ...s, player }), 'player:upsert', player)
     }
     if (events.length) run((s) => ({ ...s, rankEvents: [...s.rankEvents, ...events] }), 'rankEvents:upsert', events)
   }, [state]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Nouveau jour pendant que l'app est ouverte (onglet resté ouvert la nuit, app en arrière-plan) : on recharge
+  useEffect(() => {
+    const loadedDay = dayKey()
+    const check = () => { if (dayKey() !== loadedDay) window.location.reload() }
+    const t = setInterval(check, 60_000)
+    document.addEventListener('visibilitychange', check)
+    window.addEventListener('focus', check)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', check)
+      window.removeEventListener('focus', check)
+    }
+  }, [])
 
   const value = state && {
     ...state,

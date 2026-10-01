@@ -74,6 +74,8 @@ const remote = {
       case 'step:upsert': return check(await t('goal_steps').upsert(payload))
       case 'step:delete': return check(await t('goal_steps').delete().eq('id', payload))
       case 'penalty:upsert': return check(await t('penalties').upsert(payload))
+      // Création : si le Système (serveur) l'a déjà tirée, on garde la sienne
+      case 'penalty:create': return check(await t('penalties').upsert(payload, { onConflict: 'day', ignoreDuplicates: true }))
       case 'player:upsert': return check(await t('player').upsert({ ...payload, updated_at: new Date().toISOString() }))
       case 'rankEvents:upsert': return check(await t('rank_events').upsert(payload))
     }

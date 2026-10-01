@@ -8,6 +8,7 @@ Un tracker d'habitudes au style néon, inspiré de *Solo Leveling* : si tu rates
 
 - **Habitudes** : grille du mois, séries 🔥, fréquence « tous les jours » ou « X fois par semaine ».
 - **Pénalités du Système** : si la veille n'est pas à 100 %, une punition est tirée au sort dans une banque de 30 (100 pompes, douche froide, zéro réseaux…). Pas de refus possible, et une pénalité ratée rend la suivante plus lourde.
+- **Le Système côté serveur** (optionnel) : un cron juge ta journée juste après minuit et t'envoie la pénalité par email, même si tu n'ouvres pas l'app.
 - **Niveau & XP** : chaque journée rapporte des XP selon ton % de réussite.
 - **Rangs E → S** : calculés sur ta moyenne des 30 derniers jours. Pour monter, il faut réussir une quête de promotion. Le rang S demande 14 jours parfaits d'affilée.
 - **Stats du joueur** (Force, Agilité, Vitalité, Intelligence, Perception) : chaque habitude est classée automatiquement d'après son nom, et chaque coche fait monter sa stat.
@@ -50,6 +51,16 @@ Pour retrouver tes données sur tous tes appareils :
 
 Seul ce compte peut lire et écrire les données : les règles de sécurité (RLS) bloquent tous les autres.
 
+### Le Système côté serveur + emails (optionnel)
+
+Sans ça, la pénalité est tirée quand tu ouvres l'app. Avec, elle tombe à minuit et arrive par email.
+
+1. Crée un compte gratuit sur [resend.com](https://resend.com) **avec l'adresse qui recevra les alertes**, puis une clé API. Sans domaine à toi, Resend n'envoie qu'à cette adresse, ce qui suffit ici.
+2. Déploie la fonction : `npx supabase functions deploy system-judge --no-verify-jwt --project-ref TON_PROJECT_REF`
+3. Ouvre `supabase/cron.sql`, remplace les valeurs indiquées en haut du fichier, et exécute-le dans le SQL Editor.
+
+La fonction réutilise les règles de l'app (`src/lib`). Après les avoir modifiées, lance `npm run sync:function` puis redéploie-la.
+
 ### Mettre en ligne (optionnel)
 
 Le projet se déploie tel quel sur [Vercel](https://vercel.com) (offre gratuite) : importe le repo, ajoute les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, puis déploie. Pense à ajouter l'adresse du site dans Supabase → Authentication → URL Configuration.
@@ -58,7 +69,7 @@ Le projet se déploie tel quel sur [Vercel](https://vercel.com) (offre gratuite)
 
 | Quoi | Où |
 |---|---|
-| Banque de pénalités | `src/lib/penalties.js` |
+| Banque de pénalités | `src/lib/penalties.js` (puis `npm run sync:function`) |
 | Rangs, quêtes de promotion, XP | `src/lib/ranking.js` |
 | Stats et mots-clés de détection | `src/lib/attributes.js` |
 | Critères du mindset | `src/lib/store.jsx` (`MINDSET`) |
@@ -66,7 +77,7 @@ Le projet se déploie tel quel sur [Vercel](https://vercel.com) (offre gratuite)
 
 ## Stack
 
-React 19, Vite, Recharts, Supabase (optionnel). Aucun autre service.
+React 19, Vite, Recharts. En option : Supabase (données, login, Edge Function + pg_cron) et Resend (emails).
 
 ## Licence
 
