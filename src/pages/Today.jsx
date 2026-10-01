@@ -72,12 +72,15 @@ export default function Today({ go, openSystem }) {
                   <li key={h.id} className={`today-item ${on ? 'done' : ''} ${rest ? 'optional' : ''}`} onClick={() => data.toggleLog(h.id, today)}>
                     <Check on={on} size={26} />
                     <span className="today-name">
-                      <Dot color={h.color} /> {h.name}
-                      {per < 7 && (
-                        <small className={`today-week ${!rest && !on ? 'must' : ''}`}>
-                          {doneThisWeek(data, h, today)}/{per} cette semaine{rest ? ' · repos possible' : !on ? ' · à faire aujourd\'hui' : ''}
-                        </small>
-                      )}
+                      <Dot color={h.color} />
+                      <span className="today-text">
+                        <span className="today-title">{h.name}</span>
+                        {per < 7 && (
+                          <small className={`today-week ${!rest && !on ? 'must' : ''}`}>
+                            {doneThisWeek(data, h, today)}/{per} cette semaine{rest ? ' · repos possible' : !on ? ' · à faire aujourd\'hui' : ''}
+                          </small>
+                        )}
+                      </span>
                     </span>
                     {streak > 0 && <span className="streak">🔥 {streak}</span>}
                   </li>
