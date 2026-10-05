@@ -402,6 +402,8 @@ p { margin: 6px 0 0; }
 .quest-pips span { width: 14px; height: 14px; border-radius: 4px; background: #1a2022; }
 .quest-pips span.on { background: var(--sys); box-shadow: 0 0 8px var(--sys); }
 .quest-pips span.today { background: rgba(77, 163, 255, .35); }
+.quest-bar { margin: 4px 0; }
+.quest-bar .xp-fill { background: var(--sys); box-shadow: 0 0 10px var(--sys); }
 .bad { color: var(--red); }
 
 @media (max-width: 900px) {

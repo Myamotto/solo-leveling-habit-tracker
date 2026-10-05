@@ -1,5 +1,6 @@
 import { useData } from '../lib/store'
-import { HISTORY_MIN, QUESTS, RANKS, avg30, fullDays, levelOf, questProgress, rankIdx, rankOf, totalXp } from '../lib/ranking'
+import { HISTORY_MIN, QUESTS, RANKS, avg30, fullDays, levelOf, nextQuestDay, questProgress, rankIdx, rankOf, totalXp } from '../lib/ranking'
+import { dayKey, parseDay } from '../lib/dates'
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import { statValues } from '../lib/attributes'
 import { Card } from './ui'
@@ -16,6 +17,7 @@ export function usePlayer() {
     avg: avg30(data),
     history: fullDays(data).length,
     quest: questProgress(data, data.player),
+    nextQuest: nextQuestDay(data, data.player),
   }
 }
 
@@ -39,7 +41,8 @@ export function RankPill() {
 
 // Carte « Joueur » de la page Aujourd'hui
 export function PlayerCard() {
-  const { player, xp, level, into, need, avg, history, quest } = usePlayer()
+  const { player, xp, level, into, need, avg, history, quest, nextQuest } = usePlayer()
+  const waitDays = nextQuest && nextQuest > dayKey() ? Math.round((parseDay(nextQuest) - parseDay(dayKey())) / 864e5) : 0
   const r = rankOf(player.rank)
 
   return (
@@ -83,11 +86,17 @@ export function PlayerCard() {
           <>
             <span className="sys-tag blue">[Quête de promotion · rang {quest.rank}]</span>
             <p className="player-note">{quest.label}</p>
-            <div className="quest-pips">
-              {Array.from({ length: quest.n }, (_, i) => (
-                <span key={i} className={i < quest.streak ? 'on' : i === quest.streak && quest.todayOk ? 'today' : ''} />
-              ))}
-            </div>
+            {quest.n <= 21 ? (
+              <div className="quest-pips">
+                {Array.from({ length: quest.n }, (_, i) => (
+                  <span key={i} className={i < quest.streak ? 'on' : i === quest.streak && quest.todayOk ? 'today' : ''} />
+                ))}
+              </div>
+            ) : (
+              <div className="xp-track quest-bar">
+                <div className="xp-fill" style={{ width: `${Math.min(100, (quest.streak / quest.n) * 100)}%` }} />
+              </div>
+            )}
             <p className="muted small">
               {Math.min(quest.streak, quest.n)}/{quest.n} jours{quest.todayOk ? " · aujourd'hui en bonne voie" : ''}
               {quest.blocked && <><br /><span className="bad">Bloquée : pénalité ratée ces 30 derniers jours.</span></>}
@@ -99,6 +108,7 @@ export function PlayerCard() {
             <p className="player-avg" style={{ color: r.color }}>{avg ?? '–'} %</p>
             <p className="muted small">
               {player.rank === 'S' ? 'Rang maximal. Tiens-le.' : `Rang ${RANKS[rankIdx(player.rank) + 1].id} à ${RANKS[rankIdx(player.rank) + 1].min} %`}
+              {waitDays > 0 && <><br />Tiens ton rang : prochaine quête possible dans <b>{waitDays} jour{waitDays > 1 ? 's' : ''}</b>.</>}
             </p>
           </>
         )}

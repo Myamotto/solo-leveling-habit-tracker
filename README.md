@@ -10,7 +10,7 @@ Un tracker d'habitudes au style néon, inspiré de *Solo Leveling* : si tu rates
 - **Pénalités du Système** : si la veille n'est pas à 100 %, une punition est tirée au sort dans une banque de 30 (100 pompes, douche froide, zéro réseaux…). Pas de refus possible, et une pénalité ratée rend la suivante plus lourde.
 - **Le Système côté serveur** (optionnel) : un cron juge ta journée juste après minuit et t'envoie la pénalité par email, même si tu n'ouvres pas l'app.
 - **Niveau & XP** : chaque journée rapporte des XP selon ton % de réussite.
-- **Rangs E → S** : calculés sur ta moyenne des 30 derniers jours. Pour monter, il faut réussir une quête de promotion. Le rang S demande 14 jours parfaits d'affilée.
+- **Rangs E → S** : calculés sur ta moyenne des 30 derniers jours. Pour monter, il faut réussir une quête de promotion. Il faut aussi tenir chaque rang un moment (7 à 10 jours) avant la quête suivante. Le rang S est à part : 90 jours parfaits d’affilée.
 - **Stats du joueur** (Force, Agilité, Vitalité, Intelligence, Perception) : chaque habitude est classée automatiquement d'après son nom, et chaque coche fait monter sa stat.
 - **Mindset** (humeur, sommeil, énergie), **objectifs** avec étapes, **insights**.
 - Données dans le navigateur, ou synchronisées sur **Supabase** avec login (un seul compte : le tien).

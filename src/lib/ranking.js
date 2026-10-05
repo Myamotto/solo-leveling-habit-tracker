@@ -17,8 +17,12 @@ export const QUESTS = {
   C: { n: 5, min: 80, label: "5 jours d'affilée à 80 % ou plus" },
   B: { n: 5, min: 100, label: "5 jours parfaits d'affilée" },
   A: { n: 7, min: 100, label: "7 jours parfaits d'affilée" },
-  S: { n: 14, min: 100, noFailedPenalty: true, label: "14 jours parfaits d'affilée, sans pénalité ratée sur 30 jours" },
+  S: { n: 90, min: 100, noFailedPenalty: true, label: "90 jours parfaits d'affilée, sans pénalité ratée sur 30 jours" },
 }
+
+// Jours à tenir son rang avant que la quête suivante puisse commencer.
+// A → S : pas d'attente, la quête S (90 jours) est déjà l'épreuve.
+export const COOLDOWN = { E: 0, D: 7, C: 7, B: 10, A: 0 }
 
 export const HISTORY_MIN = 7
 export const WINDOW = 30
@@ -108,6 +112,18 @@ export function questProgress(data, player, now = new Date()) {
   return { ...q, rank: player.quest_rank, streak, todayOk, blocked }
 }
 
+// Jour où le joueur a obtenu son rang actuel (dernière promotion ou rétrogradation), null si jamais classé
+export function rankSince(data, player) {
+  const evs = (data.rankEvents || []).filter((e) => (e.kind === 'promotion' || e.kind === 'demotion') && e.rank === player.rank)
+  return evs.length ? evs.map((e) => e.day).sort().at(-1) : null
+}
+
+// Premier jour où la quête suivante peut commencer
+export function nextQuestDay(data, player, since = rankSince(data, player)) {
+  const wait = COOLDOWN[player.rank] ?? 0
+  return since && wait ? dayKey(addDays(parseDay(since), wait)) : null
+}
+
 export const DEFAULT_PLAYER = { id: 1, rank: 'E', quest_rank: null, quest_start: null, seen_level: 1, timezone: 'Europe/Paris' }
 
 // Le joueur a-t-il changé ? (champs utiles seulement, quel que soit leur ordre)
@@ -124,12 +140,14 @@ export function judge(data, player, now = new Date()) {
   if (fullDays(data, now).length < HISTORY_MIN) return { player: p, events }
   const avg = avg30(data, now)
   if (avg == null) return { player: p, events }
+  let since = rankSince(data, p)
   const eligible = rankForRate(avg).id
 
   if (rankIdx(eligible) < rankIdx(p.rank)) {
     p.rank = eligible
     p.quest_rank = null
     p.quest_start = null
+    since = today
     ev('demotion', eligible)
   }
   // Plus assez de niveau pour la quête en cours : elle est annulée
@@ -143,10 +161,12 @@ export function judge(data, player, now = new Date()) {
       p.rank = p.quest_rank
       p.quest_rank = null
       p.quest_start = null
+      since = today
       ev('promotion', p.rank)
     }
   }
-  if (!p.quest_rank && rankIdx(eligible) > rankIdx(p.rank)) {
+  const ready = !nextQuestDay(data, p, since) || today >= nextQuestDay(data, p, since)
+  if (!p.quest_rank && rankIdx(eligible) > rankIdx(p.rank) && ready) {
     p.quest_rank = RANKS[rankIdx(p.rank) + 1].id
     p.quest_start = today
     ev('quest_start', p.quest_rank)
